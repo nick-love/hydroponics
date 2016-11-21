@@ -11,7 +11,7 @@
  *  
  *  The entire network is run from an Ubuntu-based laptop. The IoT devices connect to a USB wireless 
  *    adapter configured as a hotspot. The laptop also runs as the MQTT Broker. This means the 
- *    entire system is self contained and portable; a VLAN of sorts (convienient for development) 
+ *    entire system is self contained and portable; a VLAN of sorts. (convienient for development) 
  */
 
 
@@ -29,7 +29,7 @@ int enable2 = D1; // Activate sensor 2 to be read.
 SimpleDHT11 dht11;
 
 // set networking values
-const char* ssid = "ReallyBadVirus";
+const char* ssid = "IdentityTheft";
 const char* password = "lemongrab";
 const char* mqttServer = "10.42.0.1";
 const char* username = "rick"; //mqtt user
@@ -45,9 +45,13 @@ void setup() {
   // prepare to send +V to the switch
   pinMode(enable1, OUTPUT);
   pinMode(enable2, OUTPUT);
-  
+
+  //Connect to the WAP
   setupWiFi();
   client.setServer(mqttServer, 1883);
+
+  //Connect to the MQTT server
+  serverConnect();
 }
 
 //Start WiFi connection
@@ -64,6 +68,9 @@ void setupWiFi() {
   Serial.print(WiFi.localIP()); // the ip address of the WAP
 }
 
+void serverConnect() {
+  client.connect("Plant-Node-1", username, userpass);
+}
 
 void loop() {
 
@@ -80,8 +87,8 @@ void loop() {
 
 
   /*****PH and PPM*****/
-  double ph = 0; //sensor1
-  double ppm = 0; //sensor2
+  int ph = 0; //sensor1
+  int ppm = 0; //sensor2
 
   digitalWrite(enable1, HIGH); // enable sensor1
   ph = analogRead(pinAnalog); // read sensor1
@@ -96,23 +103,23 @@ void loop() {
   // call print functions
   printDHT(temperature, humidity);
   printAnalog(ph, ppm);
+
   
-  
-  snprintf (pub, 40, "pH: %f", ph);
+  snprintf (pub, 40, "ppm: %ld",ppm );
 
   Serial.print(pub);
 
-  client.publish("outTopic", "Hello Wall");  
+  client.publish("outTopic", pub);  
   
-  delay(5000);
+  delay(1000);
 }
 
 
 void printDHT(int temperature, int humidity) {
-  Serial.print("DHT11: ");
+  Serial.print("\n\nDHT11: ");
   Serial.print((int)temperature); Serial.print(" *C, "); 
   Serial.print((int)humidity); Serial.println("%");
-  Serial.print("");
+  Serial.print("\n");
   
 }
 
