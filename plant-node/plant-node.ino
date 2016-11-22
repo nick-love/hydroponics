@@ -21,7 +21,6 @@
 #include <PubSubClient.h> // MQTT protocol library
 
 
-
 // assign GPIO pins to sensors
 int pinDHT11 = D4;
 int pinAnalog = A0; // The one and only analog input
@@ -112,15 +111,14 @@ void loop() {
   digitalWrite(enable2, LOW);
 
   printDHT(temperature, humidity);
-
   printAnalog(ph, ppm);
 
   
-  snprintf (pub, 40, "ppm: %ld",ppm );
+  snprintf (pub, 40, "%ld",ppm );
 
   Serial.print(pub);
 
-  client.publish("outTopic", pub);  
+  client.publish("plantLog", pub);  
   
   delay(1000);
 }
