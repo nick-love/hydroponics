@@ -18,7 +18,8 @@
 #include <EEPROM.h>
 #include <SimpleDHT.h> // humidity/temperature sensor 
 #include <ESP8266WiFi.h>
-#include <PubSubClient.h> // MQTT library
+#include <PubSubClient.h> // MQTT protocol library
+
 
 
 // assign GPIO pins to sensors
@@ -42,22 +43,21 @@ char pub[50]; // the message to be published
 void setup() {
   Serial.begin(115200);
 
-  // prepare to send +V to the switch
+  // prepare to send +V to the analog switch
   pinMode(enable1, OUTPUT);
   pinMode(enable2, OUTPUT);
 
-  //Connect to the WAP
-  setupWiFi();
+  //connect to wifi
+  wifiConnect();
   client.setServer(mqttServer, 1883);
 
   //Connect to the MQTT server
-  serverConnect();
+  brokerConnect();
 }
 
-//Start WiFi connection
-void setupWiFi() {
+void wifiConnect() {
   delay(15);
-  Serial.print("Connecting...");
+  Serial.print("WiFi settup...");
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -68,25 +68,36 @@ void setupWiFi() {
   Serial.print(WiFi.localIP()); // the ip address of the WAP
 }
 
-void serverConnect() {
-  client.connect("Plant-Node-1", username, userpass);
+void brokerConnect() {
+  //loop until connected to the server
+  while (!client.connected()) {
+    Serial.print("MQTT setup...");
+    if (client.connect("Plant-Node-1", username, userpass)) {
+      Serial.println("MQTT connected");
+    }
+  }
 }
 
 void loop() {
 
-  /*if (!client.connected()) {
-    setupWiFi();
-  }*/
+  // Check for WiFi connection
+  if (WiFi.status() != WL_CONNECTED) {
+    wifiConnect();
+  }
+
+  // Check for Broker connection
+  if (!client.connected()) {
+    brokerConnect();
+  }
   
-  /*****DHT11*****/
+  // Read from DHT11 sensors
   byte temperature = 0;
   byte humidity = 0;
   
-  //parses raw data from sensor '&' gets the memory address... pass by reference) 
   dht11.read(pinDHT11, &temperature, &humidity, NULL);
 
 
-  /*****PH and PPM*****/
+  // Read from PH and PPM sensors
   int ph = 0; //sensor1
   int ppm = 0; //sensor2
 
@@ -100,8 +111,8 @@ void loop() {
   ppm = analogRead(pinAnalog);
   digitalWrite(enable2, LOW);
 
-  // call print functions
   printDHT(temperature, humidity);
+
   printAnalog(ph, ppm);
 
   
